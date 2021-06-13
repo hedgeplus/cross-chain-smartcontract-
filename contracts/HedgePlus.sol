@@ -4,11 +4,11 @@ pragma solidity 0.8.4;
 import "./libraries/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
-import "@openzeppelin/contracts/utils/math/Math.sol";
+
 
 contract HedgePlus is ERC20, Ownable {
   
-  using Math for uint256;
+  //using Math for uint256;
   using SafeMath for uint256;
 
   event SetLiquidityProvidersIncentivesAddress(address indexed _addr);
