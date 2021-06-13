@@ -18,7 +18,7 @@ async function main() {
     hplusAddress = hplusToken.address
   }
 
-  const wPlusToken = await WHPLUS.deploy(hplusAddress)
+  const wPlusToken = await WHPLUS.deploy(hplusAddress, burnWallet)
   await wPlusToken.deployed()
   console.log('WHPLUS Token deployed to:', wPlusToken.address)
 }
