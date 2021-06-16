@@ -17,7 +17,11 @@ const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY
 const REPORT_GAS = Boolean(process.env.REPORT_GAS)
 
 const networks: NetworksUserConfig = {
-  hardhat: {},
+  hardhat: {
+    // forking: {
+    // url: `https://mainnet.infura.io/v3/${INFURA_API_KEY}`,
+    // }
+  },
   localhost: {},
   coverage: {
     url: 'http://127.0.0.1:8555', // Coverage launches its own ganache-cli client
@@ -26,12 +30,6 @@ const networks: NetworksUserConfig = {
     url: `https://rinkeby.infura.io/v3/${INFURA_API_KEY}`,
     accounts: [PRIVATE_KEY],
   },
-
-  kovan: {
-    url: `https://kovan.infura.io/v3/${INFURA_API_KEY}`,
-    accounts: [PRIVATE_KEY],
-  },
-
   mainnet: {
     url: `https://mainnet.infura.io/v3/${INFURA_API_KEY}`,
     accounts: [PRIVATE_KEY],
