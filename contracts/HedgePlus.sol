@@ -102,8 +102,8 @@ contract HedgePlus is ERC20, Ownable {
       uint256 totalTaxAmount = _calculateTaxAmount(amount, getTotalTax());
       uint256 tokensToTransfer = amount.sub(totalTaxAmount);
 
-      uint256 tokensToBurn = amount.sub( _calculateTaxAmount(amount, burnPercent) );
-      uint256 lpIncentivesAmount = amount.sub( _calculateTaxAmount(amount, lpIncentivesPercent) );
+      uint256 tokensToBurn = _calculateTaxAmount(amount, burnPercent) ;
+      uint256 lpIncentivesAmount = _calculateTaxAmount(amount, lpIncentivesPercent);
 
       //deduct user balance
       _balances[sender]  =  _balances[sender].sub(amount);
