@@ -103,7 +103,7 @@ describe('WHPlus contract', function () {
       whpusContract = whpusContract.connect(addr1)
       await hpContract.increaseAllowance(whpusContract.address, balance)
 
-      await expect(whpusContract.wrap(transferAmount)).to.be.revertedWith(
+      await expect(whpusContract.wrap(balance + 1)).to.be.revertedWith(
         'Transfer amount exceeds balance'
       )
     })
@@ -113,9 +113,11 @@ describe('WHPlus contract', function () {
       let balance = await hpContract.balanceOf(addr1.address)
       hpContract = hpContract.connect(addr1)
       whpusContract = whpusContract.connect(addr1)
+
       await hpContract.increaseAllowance(whpusContract.address, balance)
       await whpusContract.wrap(balance)
-      await expect(whpusContract.unwrap(transferAmount)).to.be.revertedWith(
+
+      await expect(whpusContract.unwrap(balance + 1)).to.be.revertedWith(
         'Transfer amount exceeds balance'
       )
     })
