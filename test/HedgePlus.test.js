@@ -15,22 +15,18 @@ describe('HedgePlus contract', function () {
   const LP_INCENTIVE = 100
   const BP_DIVISOR = 10000
   const TAX = BURN_PERCENT + LP_INCENTIVE
-  let owner
-  let lp
-  let burnAddr
-  let addr1
-  let addr2
+  let owner, lp, burnAddr, addr1, addr2
 
   const netAfterTax = (amount) => {
-    return amount - (amount * TAX) / BP_DIVISOR
+    return amount - Math.floor((amount * TAX) / BP_DIVISOR)
   }
 
   const lpIncentive = (amount) => {
-    return (amount * LP_INCENTIVE) / BP_DIVISOR
+    return Math.floor((amount * LP_INCENTIVE) / BP_DIVISOR)
   }
 
   const burnAmount = (amount) => {
-    return (amount * BURN_PERCENT) / BP_DIVISOR
+    return Math.floor((amount * BURN_PERCENT) / BP_DIVISOR)
   }
 
   beforeEach(async function () {
@@ -94,6 +90,7 @@ describe('HedgePlus contract', function () {
       expect(await hpContract.balanceOf(owner.address)).to.equal(initialOwnerBalance)
     })
   })
+
   describe('Check all balances', function () {
     const transferAmount = '5000'
     let initialOwnerBalance
