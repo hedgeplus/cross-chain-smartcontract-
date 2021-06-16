@@ -30,7 +30,7 @@ contract HedgePlus is ERC20, Ownable {
   string  private _name_ = "HedgePlus";
   string  private _symbol_ = "HPLUS";
 
-  uint256 private _initiaSupply = 210_000_000 * 10e18;
+  uint256 private _initiaSupply = 210_000_000 * (10**18);
 
   constructor(
     address liquidityProvidersIncentivesAddr_,
