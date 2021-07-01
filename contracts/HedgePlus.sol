@@ -3,14 +3,8 @@ pragma solidity 0.8.4;
 
 import "./libraries/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
-
 
 contract HedgePlus is ERC20, Ownable {
-  
-  //using Math for uint256;
-  using SafeMath for uint256;
-
   event SetLiquidityProvidersIncentivesAddress(address indexed _addr);
   event SetBurnStrategyAddress(address indexed _addr);
   event SetBurnPercent(uint256 indexed _value);
@@ -27,50 +21,42 @@ contract HedgePlus is ERC20, Ownable {
   address private _liquidityProvidersIncentivesAddr;
   address private _burnStrategyAddress;
 
-  string  private _name_ = "HedgePlus";
-  string  private _symbol_ = "HPLUS";
+  string private _name_ = "HedgePlus";
+  string private _symbol_ = "HPLUS";
 
   uint256 private _initiaSupply = 210_000_000 * (10**18);
 
-  constructor(
-    address liquidityProvidersIncentivesAddr_,
-    address burnStrategyAddress_
-  ) ERC20(_name_,_symbol_) {
-
+  constructor(address liquidityProvidersIncentivesAddr_, address burnStrategyAddress_) ERC20(_name_, _symbol_) {
     require(liquidityProvidersIncentivesAddr_ != address(0), "Invalid liquidity providers incentives wallet");
     require(burnStrategyAddress_ != address(0), "Invalid burn strategy wallet");
-
 
     _liquidityProvidersIncentivesAddr = liquidityProvidersIncentivesAddr_;
     _burnStrategyAddress = burnStrategyAddress_;
 
     _mint(_msgSender(), _initiaSupply);
-
   }
 
-
-  function setLiquidityProvidersIncentivesAddress(address _addr) external onlyOwner {
-    
+  modifier validAddress(address _addr) {
     require(_addr != address(0), "Invalid address");
-    
+    _;
+  }
+
+  function setLiquidityProvidersIncentivesAddress(address _addr) external onlyOwner validAddress(_addr) {
     _liquidityProvidersIncentivesAddr = _addr;
 
     emit SetLiquidityProvidersIncentivesAddress(_addr);
   }
 
-
-
-  function setBurnStrategyAddress(address _addr) external onlyOwner {
-    
-    require(_addr != address(0), "Invalid address");
-    
+  function setBurnStrategyAddress(address _addr) external onlyOwner validAddress(_addr) {
     _burnStrategyAddress = _addr;
 
     emit SetBurnStrategyAddress(_addr);
   }
 
-  function getTotalTax() public view returns(uint256) {
-    return lpIncentivesPercent.add(burnPercent);
+  function getTotalTax() public view returns (uint256) {
+    unchecked {
+      return lpIncentivesPercent + burnPercent;
+    }
   }
 
   /**
@@ -87,36 +73,38 @@ contract HedgePlus is ERC20, Ownable {
   }
 
   function _calculateTaxAmount(uint256 amount, uint256 taxPercent) internal pure returns (uint256) {
-      return amount.mul(taxPercent).div(BP_DIVISOR);
+    return amount.mul(taxPercent).div(BP_DIVISOR);
   }
 
+  function _transfer(address sender, address recipient, uint256 amount ) internal override {
+    require(sender != address(0), "Transfer from the zero address");
+    require(recipient != address(0), "Transfer to the zero address");
+    require(amount > 0, "Invalid transfer amount");
 
-  function _transfer( address sender, address recipient, uint256 amount) override internal {
+    require(balanceOf(sender) >= amount, "Transfer amount exceeds balance");
 
-      require(sender != address(0), "Transfer from the zero address");
-      require(recipient != address(0), "Transfer to the zero address");
-      require(amount > 0, "Invalid transfer amount");
+    uint256 totalTaxAmount = _calculateTaxAmount(amount, getTotalTax());
+    uint256 tokensToTransfer;
+    unchecked {
+      tokensToTransfer = amount - totalTaxAmount;
+    }
 
-      require(balanceOf(sender) >= amount, "Transfer amount exceeds balance");
+    uint256 tokensToBurn = _calculateTaxAmount(amount, burnPercent);
+    uint256 lpIncentivesAmount = _calculateTaxAmount(amount, lpIncentivesPercent);
 
-      uint256 totalTaxAmount = _calculateTaxAmount(amount, getTotalTax());
-      uint256 tokensToTransfer = amount.sub(totalTaxAmount);
+    //deduct user balance
+    unchecked {
+      _balances[sender] = _balances[sender] - amount;
 
-      uint256 tokensToBurn = _calculateTaxAmount(amount, burnPercent) ;
-      uint256 lpIncentivesAmount = _calculateTaxAmount(amount, lpIncentivesPercent);
+      _balances[recipient] = _balances[recipient] + tokensToTransfer;
+    }
 
-      //deduct user balance
-      _balances[sender]  =  _balances[sender].sub(amount);
+    //move lp incentives token
+    unchecked {
+      _balances[_liquidityProvidersIncentivesAddr] = _balances[_liquidityProvidersIncentivesAddr] + lpIncentivesAmount;
+      _balances[_burnStrategyAddress] = _balances[_burnStrategyAddress] + tokensToBurn;
+    }
 
-      _balances[recipient] = _balances[recipient].add(tokensToTransfer);
-
-      //move lp incentives token 
-      _balances[_liquidityProvidersIncentivesAddr] = _balances[_liquidityProvidersIncentivesAddr].add(lpIncentivesAmount);
-      _balances[_burnStrategyAddress] =  _balances[_burnStrategyAddress].add(tokensToBurn);
-
-      emit Transfer(sender, recipient, tokensToTransfer);
-
+    emit Transfer(sender, recipient, tokensToTransfer);
   } //end function
-
-
 }
