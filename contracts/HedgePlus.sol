@@ -26,8 +26,14 @@ contract HedgePlus is ERC20, Ownable {
 
   uint256 private _initiaSupply = 210_000_000 * (10**18);
 
-  constructor(address liquidityProvidersIncentivesAddr_, address burnStrategyAddress_) ERC20(_name_, _symbol_) {
-    require(liquidityProvidersIncentivesAddr_ != address(0), "Invalid liquidity providers incentives wallet");
+  constructor(
+    address liquidityProvidersIncentivesAddr_,
+    address burnStrategyAddress_
+  ) ERC20(_name_, _symbol_) {
+    require(
+      liquidityProvidersIncentivesAddr_ != address(0),
+      "Invalid liquidity providers incentives wallet"
+    );
     require(burnStrategyAddress_ != address(0), "Invalid burn strategy wallet");
 
     _liquidityProvidersIncentivesAddr = liquidityProvidersIncentivesAddr_;
@@ -41,22 +47,28 @@ contract HedgePlus is ERC20, Ownable {
     _;
   }
 
-  function setLiquidityProvidersIncentivesAddress(address _addr) external onlyOwner validAddress(_addr) {
+  function setLiquidityProvidersIncentivesAddress(address _addr)
+    external
+    onlyOwner
+    validAddress(_addr)
+  {
     _liquidityProvidersIncentivesAddr = _addr;
 
     emit SetLiquidityProvidersIncentivesAddress(_addr);
   }
 
-  function setBurnStrategyAddress(address _addr) external onlyOwner validAddress(_addr) {
+  function setBurnStrategyAddress(address _addr)
+    external
+    onlyOwner
+    validAddress(_addr)
+  {
     _burnStrategyAddress = _addr;
 
     emit SetBurnStrategyAddress(_addr);
   }
 
   function getTotalTax() public view returns (uint256) {
-    unchecked {
-      return lpIncentivesPercent + burnPercent;
-    }
+    return lpIncentivesPercent + burnPercent;
   }
 
   /**
@@ -72,11 +84,19 @@ contract HedgePlus is ERC20, Ownable {
     emit SetLPIncentivesPercent(_value);
   }
 
-  function _calculateTaxAmount(uint256 amount, uint256 taxPercent) internal pure returns (uint256) {
-    return amount.mul(taxPercent).div(BP_DIVISOR);
+  function _calculateTaxAmount(uint256 amount, uint256 taxPercent)
+    internal
+    pure
+    returns (uint256)
+  {
+    return (amount * taxPercent) / BP_DIVISOR;
   }
 
-  function _transfer(address sender, address recipient, uint256 amount ) internal override {
+  function _transfer(
+    address sender,
+    address recipient,
+    uint256 amount
+  ) internal override {
     require(sender != address(0), "Transfer from the zero address");
     require(recipient != address(0), "Transfer to the zero address");
     require(amount > 0, "Invalid transfer amount");
@@ -84,26 +104,28 @@ contract HedgePlus is ERC20, Ownable {
     require(balanceOf(sender) >= amount, "Transfer amount exceeds balance");
 
     uint256 totalTaxAmount = _calculateTaxAmount(amount, getTotalTax());
+    require(amount >= totalTaxAmount, "Invalid tokens to transfer");
     uint256 tokensToTransfer;
-    unchecked {
-      tokensToTransfer = amount - totalTaxAmount;
-    }
+    tokensToTransfer = amount - totalTaxAmount;
 
     uint256 tokensToBurn = _calculateTaxAmount(amount, burnPercent);
-    uint256 lpIncentivesAmount = _calculateTaxAmount(amount, lpIncentivesPercent);
+    uint256 lpIncentivesAmount =
+      _calculateTaxAmount(amount, lpIncentivesPercent);
 
     //deduct user balance
-    unchecked {
-      _balances[sender] = _balances[sender] - amount;
+    uint256 balanceOfSender = _balances[sender];
+    require(balanceOfSender >= amount, "Invalid sender balance");
+    _balances[sender] = balanceOfSender - amount;
 
-      _balances[recipient] = _balances[recipient] + tokensToTransfer;
-    }
+    _balances[recipient] = _balances[recipient] + tokensToTransfer;
 
     //move lp incentives token
-    unchecked {
-      _balances[_liquidityProvidersIncentivesAddr] = _balances[_liquidityProvidersIncentivesAddr] + lpIncentivesAmount;
-      _balances[_burnStrategyAddress] = _balances[_burnStrategyAddress] + tokensToBurn;
-    }
+    _balances[_liquidityProvidersIncentivesAddr] =
+      _balances[_liquidityProvidersIncentivesAddr] +
+      lpIncentivesAmount;
+    _balances[_burnStrategyAddress] =
+      _balances[_burnStrategyAddress] +
+      tokensToBurn;
 
     emit Transfer(sender, recipient, tokensToTransfer);
   } //end function

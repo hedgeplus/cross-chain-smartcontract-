@@ -6,8 +6,9 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Context.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-contract WHPLUS is Context, Ownable, ERC20Burnable {
+contract WHPLUS is Context, Ownable, ERC20Burnable, ReentrancyGuard {
   ERC20 public HPLUS;
 
   constructor(address _nativeToken) ERC20("Wrapped HPLUS", "WHPLUS") {
@@ -29,24 +30,24 @@ contract WHPLUS is Context, Ownable, ERC20Burnable {
     HPLUS = ERC20(_nativeToken);
   }
 
-  function wrap(uint256 _amount) public {
+  function wrap(uint256 _amount) public nonReentrant {
     uint256 balanceBefore = HPLUS.balanceOf(address(this));
-    HPLUS.safeTransferFrom(_msgSender(), address(this), _amount);
+    HPLUS.transferFrom(_msgSender(), address(this), _amount);
+    uint256 balanceCurrent = HPLUS.balanceOf(address(this));
+    require(balanceCurrent >= balanceBefore, "No transfer done.");
     uint256 realAmount;
-    unchecked {
-      realAmount = HPLUS.balanceOf(address(this)) - balanceBefore;
-    }
+    realAmount = balanceCurrent - balanceBefore;
     _mint(_msgSender(), realAmount);
     emit Wrapped(_msgSender(), _amount, realAmount);
   }
 
-  function unwrap(uint256 _amount) public {
+  function unwrap(uint256 _amount) public nonReentrant {
     uint256 balanceBefore = HPLUS.balanceOf(_msgSender());
-    HPLUS.safeTransfer(_msgSender(), _amount);
+    HPLUS.transfer(_msgSender(), _amount);
+    uint256 balanceCurrent = HPLUS.balanceOf(_msgSender());
+    require(balanceCurrent >= balanceBefore, "No transfer done.");
     uint256 realAmount;
-    unchecked {
-      realAmount = HPLUS.balanceOf(_msgSender()) - balanceBefore;
-    }
+    realAmount = balanceCurrent - balanceBefore;
     _burn(_msgSender(), _amount);
     emit Unwrapped(_msgSender(), _amount, realAmount);
   }
